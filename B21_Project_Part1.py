@@ -256,6 +256,11 @@ class Game():
         ]
         # select from filtered positions
         available_positions = [(x, y) for (x, y) in possible_positions if (x, y) not in self.snakeCoordinates]
+        # trigger game over if no available positions for prey (snake occupies all possible prey positions) "Win condition"
+        if not available_positions:
+            self.gameNotOver = False
+            self.queue.put_nowait({"game_over": True})
+            return
         x, y = random.choice(available_positions)
 
         #store the prey coordinates
