@@ -126,11 +126,11 @@ class Game():
         """
         SPEED = 0.15     #speed of snake updates (sec)
         while self.gameNotOver:
-            #start a new move
+            #start a new move (calculate next position and check game status)
             self.move()
             #add the move task to the queue
             self.queue.put_nowait({"move": self.snakeCoordinates})
-            time.sleep(SPEED)
+            time.sleep(SPEED) #add pauses to control speed
 
 
     def whenAnArrowKeyIsPressed(self, e) -> None:
@@ -175,8 +175,8 @@ class Game():
 
         #check if the head of the snake is within the prey's area (considering the prey's width) to determine if the prey has been captured 
         #(mostly done for fist sponned in prey as grid matchup cannot be guaranteed)
-        if (prey_x - PREY_ICON_WIDTH <= head_x <= prey_x + PREY_ICON_WIDTH and
-            prey_y - PREY_ICON_WIDTH <= head_y <= prey_y + PREY_ICON_WIDTH):
+        if (prey_x - PREY_ICON_HALF_WIDTH <= head_x <= prey_x + PREY_ICON_HALF_WIDTH and
+            prey_y - PREY_ICON_HALF_WIDTH <= head_y <= prey_y + PREY_ICON_HALF_WIDTH):
             #is captured add score and create new prey
             self.score += 1
             self.queue.put_nowait({"score": self.score})
@@ -220,7 +220,8 @@ class Game():
             field and also adds a "game_over" task to the queue. 
         """
         x, y = snakeCoordinates
-        #check for wall encounters or self encounters 
+        # check wall collision: head has moved outside canvas bounds
+        # check self-collision: head matches any body segment except the last one (which is the head's previous position and will be vacated after the move)
         if (x < 0 or x >= WINDOW_WIDTH or y < 0 or y >= WINDOW_HEIGHT or 
             snakeCoordinates in self.snakeCoordinates[:-1]):
             self.gameNotOver = False
@@ -239,30 +240,31 @@ class Game():
             away from the walls. 
         """
         THRESHOLD = 15   #sets how close prey can be to borders
+        SCORE_TEXT_X_MAX = 120  # score text occupies roughly x: 0-120, y: 0-30
+        SCORE_TEXT_Y_MAX = 30
         #to make the prey alligned with the snakes movement grid
         x_offset = self.snakeCoordinates[0][0] % SNAKE_ICON_WIDTH
         y_offset = self.snakeCoordinates[0][1] % SNAKE_ICON_WIDTH
 
-        #generate possible x and y coordinates for the prey that are aligned with the snake's movement grid and are at least THRESHOLD away from the walls
+        #generate possible x and y coordinates for the prey that are aligned with the snake's movement grid and are at least THRESHOLD away from the walls, and not under text
         possible_x = [x for x in range(x_offset, WINDOW_WIDTH, SNAKE_ICON_WIDTH) if THRESHOLD <= x <= WINDOW_WIDTH - THRESHOLD]
         possible_y = [y for y in range(y_offset, WINDOW_HEIGHT, SNAKE_ICON_WIDTH) if THRESHOLD <= y <= WINDOW_HEIGHT - THRESHOLD]
-
-        #randomly select x and y coordinates for the prey from the possible coordinates
-        x = random.choice(possible_x)
-        y = random.choice(possible_y)
-
-        #ensure the the pray does not overlap with the snake's current coordinates
-        while (x, y) in self.snakeCoordinates:
-            x = random.choice(possible_x)
-            y = random.choice(possible_y)
+        # a position is excluded only if BOTH x and y are within the score text region
+        possible_positions = [
+            (x, y) for x in possible_x for y in possible_y
+            if not (x <= SCORE_TEXT_X_MAX and y <= SCORE_TEXT_Y_MAX)
+        ]
+        # select from filtered positions
+        available_positions = [(x, y) for (x, y) in possible_positions if (x, y) not in self.snakeCoordinates]
+        x, y = random.choice(available_positions)
 
         #store the prey coordinates
         self.preyCoordinates = (x, y)
         preyCoordinates = (
-            x - PREY_ICON_WIDTH,
-            y - PREY_ICON_WIDTH,
-            x + PREY_ICON_WIDTH,
-            y + PREY_ICON_WIDTH
+            x - PREY_ICON_HALF_WIDTH,
+            y - PREY_ICON_HALF_WIDTH,
+            x + PREY_ICON_HALF_WIDTH,
+            y + PREY_ICON_HALF_WIDTH
         )
         self.queue.put_nowait({"prey": preyCoordinates})
         
@@ -272,8 +274,9 @@ if __name__ == "__main__":
     WINDOW_WIDTH = 500           
     WINDOW_HEIGHT = 300 
     SNAKE_ICON_WIDTH = 15
-    PREY_ICON_WIDTH = SNAKE_ICON_WIDTH//2   #width of the prey icon is half of the width of the snake icon to make it easier to capture
-
+    PREY_ICON_WIDTH = SNAKE_ICON_WIDTH   #width of the prey matches that of snake
+    PREY_ICON_HALF_WIDTH = PREY_ICON_WIDTH // 2 #offset from center to use when drawing prey
+    
     BACKGROUND_COLOUR = "green"   #you may change this colour if you wish
     ICON_COLOUR = "yellow"        #you may change this colour if you wish
 
