@@ -5,12 +5,12 @@ import threading
 import queue
 import time, random
 
-# Global variable definitions
-NUMBER_OF_CONSUMERS = 5
-NUMBER_OF_PRODUCERS = 4
-TOTAL_ITEMS = 22
-RANDOM_PRODUCER_SLEEP = (0.1, 0.5) # seconds
-RANDOM_CONSUMER_SLEEP = (0.1, 0.5) # seconds
+# --- Global variable definitions --- #
+NUMBER_OF_CONSUMERS: int = 5 # Number of consumers
+NUMBER_OF_PRODUCERS: int = 12 # Number of producers 
+TOTAL_ITEMS: int = 24
+RANDOM_PRODUCER_SLEEP: tuple[float, float] = (0.1, 0.5) # seconds
+RANDOM_CONSUMER_SLEEP: tuple[float, float] = (0.1, 0.5) # seconds
 
 def consumerWorker (q) -> None: #q is the passed queue object
     """target worker for a consumer thread"""
