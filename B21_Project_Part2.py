@@ -21,11 +21,13 @@ def consumerWorker (q):
 
     while True:
         item = q.get() # Consume item with a synchronize safe action that removes and returns the item
-        q.task_done() # Release the queue lock
+        
         if item is None: # Check none to know when to stop
+            q.task_done() # Release the queue lock
             break
         print(f"{threading.current_thread().name} consumed: {item}")
         time.sleep(random.uniform(*RANDOM_CONSUMER_SLEEP)) # Random sleep time
+        q.task_done() # Release the queue lock
   
 def producerWorker(q): 
     """
